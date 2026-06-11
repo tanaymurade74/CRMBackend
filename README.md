@@ -153,12 +153,3 @@ Sample response: `[ { id, name, salesAgent, closedAt } ]`
 ## Related Repositories
 
 * **Frontend (React):** [https://github.com/tanaymurade74/CRM-Frontend](https://github.com/tanaymurade74/CRM-Frontend)
-
-## Notes
-
-* CORS is open to all origins; the API has no authentication.
-* The server port is fixed at `3000` in `index.js`.
-
-## Contact
-
-Found a bug or have a feature request? Open an issue on the repo, or reach out at _your-email@example.com_ (replace with your contact).
