@@ -1,79 +1,14 @@
 # Anvaya CRM – Backend
 
-A REST API for a Customer Relationship Management application. It powers lead tracking, sales agent management, comments, tags, and pipeline reporting, built with Express and MongoDB (Mongoose).
+A REST API for a Customer Relationship Management app. It powers lead tracking, sales agents, comments, tags, and pipeline reporting, built with Express, Node.js, and MongoDB.
 
 ## Live API
 
-https://crm-backend-wlhu.vercel.app
+[https://crm-backend-wlhu.vercel.app](https://crm-backend-wlhu.vercel.app)
 
 > Base URL for all endpoints below. When running locally, use `http://localhost:3000`.
 
-## Tech Stack
-
-| Layer        | Technology        |
-|--------------|-------------------|
-| Runtime      | Node.js           |
-| Framework    | Express 5         |
-| Database     | MongoDB           |
-| ODM          | Mongoose 9        |
-| Config       | dotenv            |
-| CORS         | cors              |
-| Module System| CommonJS          |
-
----
-
-## Features
-
-- **Lead Management** – Create, read, update, delete, filter, and fuzzy-search leads.
-- **Sales Agents** – Manage the sales team with unique-email enforcement.
-- **Comments** – Attach comments to leads, authored by a sales agent.
-- **Tags** – Create and list reusable, uniquely-named tags.
-- **Pipeline Reports** – Count open leads and list leads closed in the last 7 days.
-- **Input Validation** – Required-field checks, enum validation, and ObjectId format validation on requests.
-
----
-
-## Data Models
-
-### Lead
-| Field         | Type       | Notes                                                                                   |
-|---------------|------------|-----------------------------------------------------------------------------------------|
-| `name`        | String     | Required                                                                                |
-| `source`      | String     | Required. One of: `Website`, `Referral`, `Cold Call`, `Advertisement`, `Email`, `Other` |
-| `salesAgent`  | ObjectId   | Required. References a `SalesAgent`                                                      |
-| `status`      | String     | One of: `New`, `Contacted`, `Qualified`, `Proposal Sent`, `Closed`. Default: `New`      |
-| `tags`        | [String]   | Optional array of tag names                                                              |
-| `timeToClose` | Number     | Required. Must be ≥ 1                                                                    |
-| `priority`    | String     | One of: `High`, `Medium`, `Low`. Default: `Medium`                                       |
-| `closedAt`    | Date       | Set automatically when a lead's status is updated to `Closed`                            |
-| `createdAt` / `updatedAt` | Date | Added automatically via timestamps                                              |
-
-### SalesAgent
-| Field       | Type   | Notes              |
-|-------------|--------|--------------------|
-| `name`      | String | Required           |
-| `email`     | String | Required, unique   |
-| `createdAt` | Date   | Defaults to now    |
-
-### Comment
-| Field         | Type     | Notes                               |
-|---------------|----------|-------------------------------------|
-| `lead`        | ObjectId | Required. References a `Lead`        |
-| `author`      | ObjectId | Required. References a `SalesAgent`  |
-| `commentText` | String   | Required                            |
-| `createdAt`   | Date     | Defaults to now                     |
-
-### Tag
-| Field       | Type   | Notes            |
-|-------------|--------|------------------|
-| `name`      | String | Required, unique |
-| `createdAt` | Date   | Defaults to now  |
-
----
-
-## Getting Started
-
-### Installation
+## Quick Start
 
 ```bash
 git clone https://github.com/tanaymurade74/CRMBackend.git
@@ -81,141 +16,149 @@ cd CRMBackend
 npm install
 ```
 
-### Environment Variables
-
 Create a `.env` file in the project root:
 
 ```env
 MONGODB=your_mongodb_connection_string
 ```
 
-> The app reads the connection string from the `MONGODB` variable. Use a MongoDB Atlas URI or a local instance such as `mongodb://localhost:27017/anvaya-crm`.
-
-### Run the Server
+Then start the server:
 
 ```bash
-node index.js
+node index.js     # runs on http://localhost:3000
 ```
 
-The server starts on **port 3000** → `http://localhost:3000`
+> No `start` script is defined yet. To use `npm start`, add `"start": "node index.js"` to the `scripts` in `package.json` (and `nodemon` for auto-reload during development).
 
-> **Tip:** There's no `start` script defined yet. Add one to `package.json` so you can use `npm start`, and `nodemon` for auto-reload during development:
-> ```json
-> "scripts": {
->   "start": "node index.js",
->   "dev": "nodemon index.js"
-> }
-> ```
+## Technologies
 
----
+* Node.js
+* Express 5
+* MongoDB
+* Mongoose 9
+* dotenv
+* CORS
 
-## Project Structure
+## Features
 
-```
-.
-├── db/
-│   └── db.connect.js        # Mongoose connection setup (reads process.env.MONGODB)
-├── models/
-│   ├── lead.model.js        # Lead schema
-│   ├── salesAgent.model.js  # SalesAgent schema
-│   ├── comment.model.js     # Comment schema
-│   └── tag.model.js         # Tag schema
-├── index.js                 # Express app: middleware, route handlers, server bootstrap
-├── package.json
-└── .env                     # Not committed (see .gitignore)
-```
+**Leads**
 
----
+* Create, read, update, and delete leads
+* Filter leads by sales agent, status, source, or tags
+* Fuzzy search leads by name
+* `closedAt` is set automatically when a lead's status changes to `Closed`
+
+**Sales Agents**
+
+* Create, list, fetch by ID, and delete agents
+* Unique-email enforcement (duplicate emails return `409`)
+
+**Comments**
+
+* Add comments to a lead, authored by a sales agent
+* List and delete comments
+
+**Tags**
+
+* Create and list reusable, uniquely-named tags
+
+**Reports**
+
+* Count leads still in the pipeline (not yet closed)
+* List leads closed in the last 7 days
 
 ## API Reference
 
-All responses are JSON. Successful and error responses use varying top-level keys as noted below.
+All responses are JSON. Base URL: the live API above, or `http://localhost:3000`.
 
 ### Leads
 
-| Method | Endpoint                    | Description                                                          |
-|--------|-----------------------------|---------------------------------------------------------------------|
-| GET    | `/leads`                    | List leads. Supports filtering (see query params below)             |
-| GET    | `/leads/search/:searchTerm` | Fuzzy/partial search of leads by name                               |
-| POST   | `/leads`                    | Create a lead                                                       |
-| PUT    | `/leads/:id`                | Update a lead (sets `closedAt` automatically when status = `Closed`) |
-| DELETE | `/leads/:id`                | Delete a lead                                                       |
+**`GET /leads`**
+List leads. Optional query params: `salesAgent`, `status`, `source`, `tags`, `_id`.
+Sample response: `{ "Leads": [ { _id, name, source, status, ... } ] }`
 
-**`GET /leads` query parameters** (all optional, combinable): `salesAgent` (ObjectId), `status` (must be a valid status), `tags`, `source`, `_id`.
+**`GET /leads/search/:searchTerm`**
+Search leads by name (partial match).
+Sample response: `{ "Leads": [ { _id, name, ... } ] }`
 
-**Create lead — request body:**
-```json
-{
-  "name": "Acme Corp",
-  "source": "Website",
-  "salesAgent": "64f0c2a1e1b2c3d4e5f6a7b8",
-  "tags": ["enterprise", "priority"],
-  "timeToClose": 30,
-  "priority": "High"
-}
-```
+**`POST /leads`**
+Create a lead. Required: `name`, `source`.
+Sample response: `{ "Lead": { _id, name, status, ... } }`
 
-**Create lead — response (`201`):**
-```json
-{
-  "Lead": {
-    "_id": "...",
-    "name": "Acme Corp",
-    "source": "Website",
-    "status": "New",
-    "priority": "High",
-    "timeToClose": 30,
-    "createdAt": "...",
-    "updatedAt": "..."
-  }
-}
-```
+**`PUT /leads/:id`**
+Update a lead.
+Sample response: `{ "Lead": { _id, name, status, ... } }`
 
-`GET /leads` returns `{ "Leads": [ ... ] }`. Validation errors return `400`; a referenced sales agent that doesn't exist returns `404`.
+**`DELETE /leads/:id`**
+Delete a lead.
+Sample response: `{ "message": "Lead deleted successfully" }`
 
 ### Sales Agents
 
-| Method | Endpoint        | Description                                      |
-|--------|-----------------|--------------------------------------------------|
-| GET    | `/agents`       | List all sales agents                            |
-| POST   | `/agents`       | Create a sales agent (`name`, `email` required)  |
-| GET    | `/agents/:id`   | Get a sales agent by ID                          |
-| DELETE | `/agents/:id`   | Delete a sales agent                             |
+**`GET /agents`**
+List all sales agents.
+Sample response: `{ "agents": [ { _id, name, email } ] }`
 
-> Creating an agent with an email that already exists returns `409 Conflict`.
+**`POST /agents`**
+Create a sales agent. Required: `name`, `email`.
+Sample response: `{ "agent": { _id, name, email } }`
+
+**`GET /agents/:id`**
+Get a sales agent by ID.
+Sample response: `[ { _id, name, email } ]`
+
+**`DELETE /agents/:id`**
+Delete a sales agent.
 
 ### Comments
 
-| Method | Endpoint                  | Description                  |
-|--------|---------------------------|------------------------------|
-| POST   | `/leads/:id/comments`     | Add a comment to a lead      |
-| GET    | `/leads/:id/comments`     | List all comments for a lead |
-| DELETE | `/comments/:commentId`    | Delete a comment by ID       |
+**`POST /leads/:id/comments`**
+Add a comment to a lead. Required: `commentText`, `author`.
+Sample response: `{ _id, lead, author, commentText, createdAt }`
 
-**Add comment — request body:**
-```json
-{
-  "commentText": "Followed up via email.",
-  "author": "64f0c2a1e1b2c3d4e5f6a7b8"
-}
-```
+**`GET /leads/:id/comments`**
+List comments for a lead.
+Sample response: `{ "comments": [ { _id, commentText, author, ... } ] }`
+
+**`DELETE /comments/:commentId`**
+Delete a comment by ID.
 
 ### Tags
 
-| Method | Endpoint | Description                    |
-|--------|----------|--------------------------------|
-| POST   | `/tag`   | Create a tag (`name` required) |
-| GET    | `/tag`   | List all tags                  |
+**`POST /tag`**
+Create a tag. Required: `name`.
+Sample response: `{ "tag": { _id, name } }`
+
+**`GET /tag`**
+List all tags.
+Sample response: `{ "tag": [ { _id, name } ] }`
 
 ### Reports
 
-| Method | Endpoint               | Description                                                     |
-|--------|------------------------|-----------------------------------------------------------------|
-| GET    | `/report/last-week`    | List leads closed in the last 7 days                            |
-| GET    | `/report/pipeline`     | Count of leads not yet `Closed` → `{ "totalPipelineLeads": n }` |
+**`GET /report/pipeline`**
+Count of leads not yet closed.
+Sample response: `{ "totalPipelineLeads": 12 }`
 
----
+**`GET /report/last-week`**
+Leads closed in the last 7 days.
+Sample response: `[ { id, name, salesAgent, closedAt } ]`
+
+## Data Models
+
+* **Lead** — `name`, `source` (Website/Referral/Cold Call/Advertisement/Email/Other), `salesAgent` (ref), `status` (New/Contacted/Qualified/Proposal Sent/Closed), `tags[]`, `timeToClose`, `priority` (High/Medium/Low), `closedAt`, timestamps
+* **SalesAgent** — `name`, `email` (unique), `createdAt`
+* **Comment** — `lead` (ref), `author` (ref), `commentText`, `createdAt`
+* **Tag** — `name` (unique), `createdAt`
 
 ## Related Repositories
 
-- **Frontend (React):** [https://github.com/tanaymurade74/CRM-Frontend](https://github.com/tanaymurade74/CRM-Frontend)
+* **Frontend (React):** [https://github.com/tanaymurade74/CRM-Frontend](https://github.com/tanaymurade74/CRM-Frontend)
+
+## Notes
+
+* CORS is open to all origins; the API has no authentication.
+* The server port is fixed at `3000` in `index.js`.
+
+## Contact
+
+Found a bug or have a feature request? Open an issue on the repo, or reach out at _your-email@example.com_ (replace with your contact).
